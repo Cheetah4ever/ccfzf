@@ -3,6 +3,14 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <thread>
+
+#include <signal.h>
+#include <cstdlib>
+#include <unistd.h>
+#include <util.h>
+#include <sys/wait.h>
+
 using namespace std;
 
 class Displayer
@@ -71,19 +79,14 @@ void Displayer::display_footline()
     << " --------------------" << endl;
 };
 
+
+
 int main(int argc, char *argv[])
 {
 
     string example = "apple\nbanana\ncherry\n";
-
-    if (argc != 2)
-    {
-        Displayer d(example);
-        d.display();
-    }
-    else
-    {
-        Displayer d(argv[1]);
-        d.display();
-    }
+    Displayer d(example);
+    thread t1(&Displayer::display, &d);
+    t1.join();
+    
 }

@@ -67,6 +67,57 @@ void Displayer::display()
     display_footline();
 };
 
+void execute_forktty(void (*func)())
+{
+    struct winsize window{};
+    window.ws_row = 40;
+    window.ws_col = 100;
+    /*
+    The forkpty() function combines openpty(), fork(), and login_tty() to creates a new process operating in a pseudo-tty.
+    */
+
+    int primary_fd;
+    pid_t pid = forkpty(&primary_fd,
+                        nullptr, // Replica device
+                        nullptr, // Default terminal settings
+                        &window);
+    int exitstatus;
+    switch (pid)
+    {
+    case -1:
+        perror("forkpty failed");
+        exit(130);
+    case 0:
+        func();
+        cout << "Print something" << endl;
+        exit(0);
+    default:
+        char buffer[4096];
+        ssize_t count;
+        while ((count = read(primary_fd, buffer, sizeof(buffer))) > 0)
+        {
+             write(STDOUT_FILENO, buffer, count);
+        }
+
+        close(primary_fd);
+
+        if (waitpid(pid, &exitstatus, 0) == -1)
+        {
+            perror("waitpid");
+        }
+
+        else if (WIFEXITED(exitstatus))
+        {
+            printf("child exited normally with status %d\n",
+                   WEXITSTATUS(exitstatus));
+        }
+        else if (WIFSIGNALED(exitstatus))
+        {
+            printf("child was killed by signal %d\n",
+                   WTERMSIG(exitstatus));
+        }
+    }
+};
 
 
 void Displayer::display_footline()
@@ -80,13 +131,13 @@ void Displayer::display_footline()
 };
 
 
-
 int main(int argc, char *argv[])
 {
 
     string example = "apple\nbanana\ncherry\n";
     Displayer d(example);
-    thread t1(&Displayer::display, &d);
-    t1.join();
-    
+    // thread t1(&Displayer::display, &d);
+    // t1.join();
+
+
 }
